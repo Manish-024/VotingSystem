@@ -1,5 +1,21 @@
 // Admin Portal JavaScript
 
+// Load latest block hash
+async function loadLatestBlockHash() {
+    try {
+        const result = await apiRequest('/api/blockchain-data', 'GET');
+        if (result.success && result.blocks.length > 0) {
+            const latestBlock = result.blocks[result.blocks.length - 1];
+            document.getElementById('latestHashValue').textContent = latestBlock.hash;
+            document.getElementById('latestBlockIndex').textContent = latestBlock.index;
+            document.getElementById('latestBlockNonce').textContent = latestBlock.nonce;
+            document.getElementById('latestBlockTxCount').textContent = latestBlock.transaction_count;
+        }
+    } catch (error) {
+        console.error('Failed to load latest block hash:', error);
+    }
+}
+
 // Load elections on page load
 async function loadElections() {
     try {
@@ -22,31 +38,40 @@ async function loadElections() {
                 });
             }
         }
+        
+        // Load latest block hash after loading elections
+        loadLatestBlockHash();
     } catch (error) {
         console.error('Failed to load elections:', error);
     }
 }
 
-// Switch election
-    electionSelect.addEventListener('change', async () => {
-        const electionId = electionSelect.value;
-        if (electionId) {
-            try {
-                const result = await apiRequest('/api/switch-election', 'POST', {
-                    election_id: electionId
-                });
-                if (result.success) {
-                    showNotification('Switched to election: ' + electionId, 'success');
-                    // Don't reload - just let the user continue working
+// Switch election - Setup event listener
+document.addEventListener('DOMContentLoaded', () => {
+    const electionSelect = document.getElementById('electionSelect');
+    if (electionSelect) {
+        electionSelect.addEventListener('change', async () => {
+            const electionId = electionSelect.value;
+            if (electionId) {
+                try {
+                    const result = await apiRequest('/api/switch-election', 'POST', {
+                        election_id: electionId
+                    });
+                    if (result.success) {
+                        showNotification('Switched to election: ' + electionId, 'success');
+                        // Reload page to update all stats and data
+                        setTimeout(() => location.reload(), 500);
+                    }
+                } catch (error) {
+                    showNotification('Failed to switch election', 'error');
                 }
-            } catch (error) {
-                showNotification('Failed to switch election', 'error');
             }
-        }
-    });
-
-// Load elections when page loads
-document.addEventListener('DOMContentLoaded', loadElections);
+        });
+    }
+    
+    // Load elections when page loads
+    loadElections();
+});
 
 // Create Election
 document.getElementById('createElectionForm')?.addEventListener('submit', async (e) => {
@@ -187,8 +212,88 @@ document.getElementById('mineVotesBtn')?.addEventListener('click', async () => {
         const result = await apiRequest('/api/mine-votes', 'POST');
         
         if (result.success) {
+            // Show modal with block hash information
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.85);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                padding: 2rem;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white;
+                padding: 2.5rem;
+                border-radius: 1rem;
+                max-width: 650px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            `;
+            
+            content.innerHTML = `
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">⛏️</div>
+                    <h2 style="color: var(--success); margin-bottom: 0.5rem;">Block Mined Successfully!</h2>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;">${result.message}</p>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; color: white;">
+                    <div style="margin-bottom: 1rem;">
+                        <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem;">Block Hash:</div>
+                        <code style="
+                            display: block;
+                            background: rgba(0,0,0,0.2);
+                            padding: 0.75rem;
+                            border-radius: 6px;
+                            font-size: 0.8rem;
+                            word-break: break-all;
+                            font-family: monospace;
+                            font-weight: 600;
+                            cursor: pointer;
+                        " onclick="copyToClipboard('${result.block_hash}')" title="Click to copy">${result.block_hash}</code>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; font-size: 0.9rem;">
+                        <div>
+                            <div style="opacity: 0.8; font-size: 0.85rem;">Block Index:</div>
+                            <div style="font-weight: 600; font-size: 1.2rem;">#${result.block_index}</div>
+                        </div>
+                        <div>
+                            <div style="opacity: 0.8; font-size: 0.85rem;">Nonce:</div>
+                            <div style="font-weight: 600; font-size: 1.2rem;">${result.block_nonce}</div>
+                        </div>
+                        <div>
+                            <div style="opacity: 0.8; font-size: 0.85rem;">Votes:</div>
+                            <div style="font-weight: 600; font-size: 1.2rem;">${result.transaction_count}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem; font-size: 0.9rem; color: #065f46;">
+                    <strong>✓ Success:</strong> The votes have been permanently added to the blockchain and cannot be altered.
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="copyToClipboard('${result.block_hash}')" class="btn btn-secondary" style="flex: 1;">
+                        📋 Copy Hash
+                    </button>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove(); loadLatestBlockHash();" class="btn btn-primary" style="flex: 1;">
+                        ✓ Close
+                    </button>
+                </div>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
             showNotification(result.message, 'success');
-            // Don't reload - votes mined
             btn.disabled = false;
             btn.textContent = '⛏️ Mine Pending Votes';
         } else {

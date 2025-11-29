@@ -306,7 +306,18 @@ def api_mine_votes():
         return jsonify({'success': False, 'message': 'No votes to mine'})
     
     voting_system.mine_votes()
-    return jsonify({'success': True, 'message': f'{pending_count} votes mined successfully'})
+    
+    # Get the newly mined block details
+    latest_block = voting_system.blockchain.get_latest_block()
+    
+    return jsonify({
+        'success': True, 
+        'message': f'{pending_count} votes mined successfully',
+        'block_hash': latest_block.hash,
+        'block_index': latest_block.index,
+        'block_nonce': latest_block.nonce,
+        'transaction_count': len(latest_block.transactions)
+    })
 
 
 @app.route('/api/cast-vote', methods=['POST'])
@@ -327,6 +338,23 @@ def api_cast_vote():
     
     success = voting_system.cast_vote(voter_id, candidate_id, private_key)
     if success:
+        # Get the transaction that was just added
+        pending_txs = voting_system.blockchain.pending_transactions
+        if pending_txs:
+            latest_tx = pending_txs[-1]
+            # Calculate a hash for this transaction
+            import hashlib
+            import json as json_module
+            tx_data = json_module.dumps(latest_tx.to_dict(), sort_keys=True)
+            tx_hash = hashlib.sha256(tx_data.encode()).hexdigest()
+            
+            return jsonify({
+                'success': True, 
+                'message': 'Vote cast successfully!',
+                'transaction_hash': tx_hash,
+                'transaction_id': f"TX-{latest_tx.timestamp}",
+                'pending_count': len(pending_txs)
+            })
         return jsonify({'success': True, 'message': 'Vote cast successfully!'})
     else:
         return jsonify({'success': False, 'message': 'Vote casting failed. Check your credentials.'})
@@ -370,6 +398,42 @@ def api_verify_blockchain():
         'success': True,
         'is_valid': is_valid,
         'message': 'Blockchain is valid ✓' if is_valid else 'Blockchain integrity check FAILED ✗'
+    })
+
+
+@app.route('/api/blockchain-data', methods=['GET'])
+def api_blockchain_data():
+    """API: Get detailed blockchain data with all hashes."""
+    global current_election_id
+    if not current_election_id or current_election_id not in elections:
+        return jsonify({'success': False, 'message': 'Please create an election first'})
+    
+    voting_system = elections[current_election_id]
+    blockchain = voting_system.blockchain
+    
+    # Get all blocks with hash information
+    blocks_data = []
+    for block in blockchain.chain:
+        blocks_data.append({
+            'index': block.index,
+            'hash': block.hash,
+            'previous_hash': block.previous_hash,
+            'timestamp': block.timestamp,
+            'nonce': block.nonce,
+            'transaction_count': len(block.transactions),
+            'transactions': [t.to_dict() for t in block.transactions]
+        })
+    
+    # Get pending transactions
+    pending_data = [t.to_dict() for t in blockchain.pending_transactions]
+    
+    return jsonify({
+        'success': True,
+        'blocks': blocks_data,
+        'pending_transactions': pending_data,
+        'total_blocks': len(blockchain.chain),
+        'difficulty': blockchain.difficulty,
+        'is_valid': blockchain.is_chain_valid()
     })
 
 
@@ -542,9 +606,10 @@ if __name__ == '__main__':
     print("  BLOCKCHAIN VOTING SYSTEM - Web Interface")
     print("="*70)
     
-    # Get port from environment variable (for Railway/Heroku) or default to 5000
-    port = int(os.environ.get('PORT', 5000))
-    host = os.environ.get('HOST', '127.0.0.1')
+    # Get port from environment variable (for Render/Railway/Heroku) or default to 5001 (avoiding macOS AirPlay on 5000)
+    port = int(os.environ.get('PORT', 5001))
+    # Use 0.0.0.0 for cloud deployment, 127.0.0.1 for local
+    host = os.environ.get('HOST', '0.0.0.0' if os.environ.get('PORT') else '127.0.0.1')
     debug = os.environ.get('DEBUG', 'True').lower() == 'true'
     
     print(f"\n  🌐 Starting server at http://{host}:{port}")

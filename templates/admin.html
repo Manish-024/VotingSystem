@@ -65,6 +65,34 @@
             <div class="stat-label">Blockchain Valid</div>
         </div>
     </div>
+    
+    <!-- Latest Block Hash Display -->
+    <div id="latestBlockHash" style="margin: 1.5rem 0; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+            <span style="font-size: 1.5rem;">🔑</span>
+            <span style="font-weight: 600; font-size: 1.1rem;">Latest Block Hash</span>
+            <button onclick="loadLatestBlockHash()" style="margin-left: auto; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
+                🔄 Refresh
+            </button>
+        </div>
+        <code id="latestHashValue" style="display: block; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; word-break: break-all; font-family: monospace; cursor: pointer;" onclick="copyToClipboard(this.textContent)" title="Click to copy">
+            Loading...
+        </code>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 0.75rem; font-size: 0.85rem;">
+            <div>
+                <div style="opacity: 0.8;">Block Index:</div>
+                <div id="latestBlockIndex" style="font-weight: 600; font-size: 1.1rem;">-</div>
+            </div>
+            <div>
+                <div style="opacity: 0.8;">Nonce:</div>
+                <div id="latestBlockNonce" style="font-weight: 600; font-size: 1.1rem;">-</div>
+            </div>
+            <div>
+                <div style="opacity: 0.8;">Transactions:</div>
+                <div id="latestBlockTxCount" style="font-weight: 600; font-size: 1.1rem;">-</div>
+            </div>
+        </div>
+    </div>
 
     <div class="election-status">
         <h3>{{ stats.election_name }}</h3>

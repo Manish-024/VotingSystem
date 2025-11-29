@@ -89,11 +89,91 @@ document.getElementById('castVoteForm')?.addEventListener('submit', async (e) =>
             showNotification(result.message, 'success');
             clearForm('castVoteForm');
             
-            // Show success message
-            setTimeout(() => {
-                alert('✓ Your vote has been successfully recorded!\n\nYour vote will be mined into the blockchain by the administrator.\n\nThank you for participating in this election.');
-                location.reload();
-            }, 1000);
+            // Show success message with transaction hash
+            if (result.transaction_hash) {
+                // Create modal to display transaction details
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.85);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    padding: 2rem;
+                `;
+                
+                const content = document.createElement('div');
+                content.style.cssText = `
+                    background: white;
+                    padding: 2.5rem;
+                    border-radius: 1rem;
+                    max-width: 600px;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                `;
+                
+                content.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 1.5rem;">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+                        <h2 style="color: var(--success); margin-bottom: 0.5rem;">Vote Successfully Cast!</h2>
+                        <p style="color: var(--text-muted); font-size: 0.95rem;">Your vote has been recorded in the blockchain</p>
+                    </div>
+                    
+                    <div style="background: var(--light); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                        <div style="margin-bottom: 1rem;">
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Transaction Hash:</div>
+                            <code style="
+                                display: block;
+                                background: white;
+                                padding: 0.75rem;
+                                border-radius: 6px;
+                                font-size: 0.8rem;
+                                word-break: break-all;
+                                border: 2px solid var(--border-color);
+                                font-family: monospace;
+                                color: var(--primary);
+                                font-weight: 600;
+                            ">${result.transaction_hash}</code>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+                            <div>
+                                <div style="color: var(--text-muted); font-size: 0.85rem;">Transaction ID:</div>
+                                <div style="font-weight: 600; color: var(--primary);">${result.transaction_id || 'N/A'}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--text-muted); font-size: 0.85rem;">Pending Votes:</div>
+                                <div style="font-weight: 600; color: var(--accent);">${result.pending_count || 0}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem; font-size: 0.9rem;">
+                        <strong>⚠️ Important:</strong> Your vote is currently in the pending pool. It will be permanently recorded on the blockchain when the administrator mines the next block.
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem;">
+                        <button onclick="copyToClipboard('${result.transaction_hash}')" class="btn btn-secondary" style="flex: 1;">
+                            📋 Copy Hash
+                        </button>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove();" class="btn btn-primary" style="flex: 1;">
+                            ✓ Close
+                        </button>
+                    </div>
+                `;
+                
+                modal.appendChild(content);
+                document.body.appendChild(modal);
+            } else {
+                setTimeout(() => {
+                    alert('✓ Your vote has been successfully recorded!\n\nYour vote will be mined into the blockchain by the administrator.\n\nThank you for participating in this election.');
+                    location.reload();
+                }, 1000);
+            }
         } else {
             showNotification(result.message, 'error');
             btn.disabled = false;
