@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Blockchain Voting System{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="gradient-text">Blockchain-Based</span><br>
+                Voting System
+            </h1>
+            <p class="hero-subtitle">
+                Secure, transparent, and tamper-proof digital voting powered by blockchain technology
+            </p>
+            <div class="hero-buttons">
+                <a href="/admin" class="btn btn-primary">Admin Portal</a>
+                <a href="/voter" class="btn btn-secondary">Cast Your Vote</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="features">
+    <div class="container">
+        <h2 class="section-title">Why Blockchain Voting?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Secure & Private</h3>
+                <p>Each voter receives a unique private key. Votes are encrypted and secured using SHA-256 hashing.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔗</div>
+                <h3>Immutable Records</h3>
+                <p>Once a vote is recorded on the blockchain, it cannot be altered or deleted, ensuring data integrity.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">✨</div>
+                <h3>Transparent</h3>
+                <p>All transactions are verifiable on the blockchain while maintaining voter anonymity.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Proof of Work</h3>
+                <p>Votes are mined into blocks using cryptographic proof-of-work for maximum security.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <h3>Double-Vote Prevention</h3>
+                <p>System automatically prevents voters from casting multiple votes in the same election.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">✅</div>
+                <h3>Verifiable Results</h3>
+                <p>Anyone can verify the blockchain integrity and validate that results are accurate and unaltered.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="how-it-works">
+    <div class="container">
+        <h2 class="section-title">How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Register</h3>
+                <p>Voters and candidates register with unique IDs and receive secure credentials.</p>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Vote</h3>
+                <p>Cast your vote securely using your private key during the active election period.</p>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Mine</h3>
+                <p>Votes are mined into blockchain blocks using cryptographic proof-of-work.</p>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <h3>Verify</h3>
+                <p>Results are calculated from the immutable blockchain and can be verified by anyone.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="cta">
+    <div class="container">
+        <h2>Ready to Experience Secure Voting?</h2>
+        <p>Join thousands using blockchain technology for transparent elections</p>
+        <a href="/voter" class="btn btn-primary btn-large">Get Started</a>
+    </div>
+</div>
+{% endblock %}

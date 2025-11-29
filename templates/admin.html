@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Portal - Blockchain Voting System{% endblock %}
+
+{% block content %}
+<div class="container admin-container">
+    <h1 class="page-title">🔐 Administrator Portal</h1>
+    
+    <!-- Election Selector -->
+    <div id="electionSelector" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+        <label for="electionSelect" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Current Election:</label>
+        <select id="electionSelect" class="form-control" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: white;">
+            <option value="">Loading elections...</option>
+        </select>
+    </div>
+    
+    {% if not system_exists %}
+    <div class="alert alert-info">
+        <strong>No Election Created</strong><br>
+        Create a new election to get started, or use sample data for testing.
+    </div>
+    <div style="text-align: center; margin: 2rem 0;">
+        <button id="createSampleDataBtn" class="btn btn-secondary btn-large">
+            🎲 Create Sample Election Data
+        </button>
+        <p style="margin-top: 0.5rem; color: var(--text-light); font-size: 0.875rem;">
+            This will create a sample election with 5 candidates and 20 voters
+        </p>
+    </div>
+    {% else %}
+    <div style="text-align: center; margin: 1rem 0;">
+        <button id="replaceSampleDataBtn" class="btn btn-warning">
+            🔄 Replace with Sample Election Data
+        </button>
+        <p style="margin-top: 0.5rem; color: var(--text-light); font-size: 0.875rem;">
+            This will replace the current election with sample data
+        </p>
+    </div>
+    {% endif %}
+
+    {% if stats %}
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.voter_count }}</div>
+            <div class="stat-label">Registered Voters</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.candidate_count }}</div>
+            <div class="stat-label">Candidates</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.votes_cast }}</div>
+            <div class="stat-label">Votes Cast</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.pending_votes }}</div>
+            <div class="stat-label">Pending Votes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.blockchain_blocks }}</div>
+            <div class="stat-label">Blockchain Blocks</div>
+        </div>
+        <div class="stat-card {% if stats.blockchain_valid %}stat-success{% else %}stat-error{% endif %}">
+            <div class="stat-value">{% if stats.blockchain_valid %}✓{% else %}✗{% endif %}</div>
+            <div class="stat-label">Blockchain Valid</div>
+        </div>
+    </div>
+
+    <div class="election-status">
+        <h3>{{ stats.election_name }}</h3>
+        <span class="status-badge {% if stats.is_active %}status-active{% else %}status-inactive{% endif %}">
+            {% if stats.is_active %}🟢 Active{% else %}🔴 Inactive{% endif %}
+        </span>
+    </div>
+    {% endif %}
+
+    <div class="admin-grid">
+        <!-- Create Election -->
+        <div class="admin-card">
+            <h2>Create New Election</h2>
+            <form id="createElectionForm" class="form">
+                <div class="form-group">
+                    <label>Election Name</label>
+                    <input type="text" id="electionName" placeholder="e.g., Presidential Election 2025" required>
+                </div>
+                <div class="form-group">
+                    <label>Mining Difficulty (1-4)</label>
+                    <input type="number" id="difficulty" min="1" max="4" value="2" required>
+                    <small>Higher difficulty = More secure but slower mining</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Election</button>
+            </form>
+        </div>
+
+        <!-- Register Voter -->
+        <div class="admin-card">
+            <h2>Register Voter</h2>
+            <form id="registerVoterForm" class="form">
+                <div class="form-group">
+                    <label>Voter ID</label>
+                    <input type="text" id="voterId" placeholder="e.g., V001" required>
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="voterName" placeholder="e.g., John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="voterEmail" placeholder="e.g., john@example.com" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Register Voter</button>
+            </form>
+            <div id="privateKeyDisplay" class="private-key-display" style="display: none;">
+                <div class="alert alert-warning">
+                    <strong>⚠️ Important: Save this Private Key!</strong><br>
+                    <code id="privateKeyValue"></code><br>
+                    <small>This key is needed to vote and cannot be recovered.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Register Candidate -->
+        <div class="admin-card">
+            <h2>Register Candidate</h2>
+            <form id="registerCandidateForm" class="form">
+                <div class="form-group">
+                    <label>Candidate ID</label>
+                    <input type="text" id="candidateId" placeholder="e.g., C001" required>
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="candidateName" placeholder="e.g., Alice Johnson" required>
+                </div>
+                <div class="form-group">
+                    <label>Party</label>
+                    <input type="text" id="candidateParty" placeholder="e.g., Progressive Party" required>
+                </div>
+                <div class="form-group">
+                    <label>Description (Optional)</label>
+                    <textarea id="candidateDescription" rows="2" placeholder="Brief description..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Register Candidate</button>
+            </form>
+        </div>
+
+        <!-- Election Controls -->
+        <div class="admin-card">
+            <h2>Election Controls</h2>
+            <div class="button-group">
+                <button id="startElectionBtn" class="btn btn-success">▶️ Start Election</button>
+                <button id="endElectionBtn" class="btn btn-danger">⏹️ End Election</button>
+            </div>
+            <div class="button-group" style="margin-top: 1rem;">
+                <button id="mineVotesBtn" class="btn btn-secondary">⛏️ Mine Pending Votes</button>
+                <button id="verifyBlockchainBtn" class="btn btn-secondary">✓ Verify Blockchain</button>
+            </div>
+            <div class="button-group" style="margin-top: 1rem;">
+                <a href="/results" class="btn btn-primary" style="display: inline-block;">📊 View Results</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

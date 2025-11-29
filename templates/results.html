@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Results - Blockchain Voting System{% endblock %}
+
+{% block content %}
+<div class="container results-container">
+    <h1 class="page-title">📊 Election Results</h1>
+    
+    <!-- Election Selector -->
+    <div id="electionSelector" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+        <label for="electionSelect" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Select Election:</label>
+        <select id="electionSelect" class="form-control" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: white;">
+            <option value="">Loading elections...</option>
+        </select>
+    </div>
+    
+    {% if not system_exists %}
+    <div class="alert alert-error">
+        <strong>No Election Available</strong><br>
+        There are currently no election results to display.
+    </div>
+    {% else %}
+    
+    <div class="results-header">
+        <h2>{{ stats.election_name }}</h2>
+    </div>
+
+    <div class="stats-summary">
+        <div class="summary-item">
+            <div class="summary-label">Total Votes Cast</div>
+            <div class="summary-value">{{ stats.total_votes }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Registered Voters</div>
+            <div class="summary-value">{{ stats.total_voters }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Voter Turnout</div>
+            <div class="summary-value">{{ stats.turnout }}%</div>
+        </div>
+    </div>
+
+    {% if candidates %}
+    <div class="results-table-container">
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Candidate</th>
+                    <th>Party</th>
+                    <th>Votes</th>
+                    <th>Percentage</th>
+                    <th>Visual</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for candidate in candidates %}
+                <tr {% if loop.first %}class="winner-row"{% endif %}>
+                    <td class="rank-cell">
+                        {% if loop.first %}
+                        🏆
+                        {% else %}
+                        {{ loop.index }}
+                        {% endif %}
+                    </td>
+                    <td class="name-cell">{{ candidate.name }}</td>
+                    <td class="party-cell">{{ candidate.party }}</td>
+                    <td class="votes-cell">{{ candidate.votes }}</td>
+                    <td class="percentage-cell">{{ candidate.percentage }}%</td>
+                    <td class="visual-cell">
+                        <div class="vote-bar">
+                            <div class="vote-bar-fill" style="width: {{ candidate.percentage }}%"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if candidates[0].votes > 0 %}
+    <div class="winner-announcement">
+        <div class="winner-icon">🏆</div>
+        <h2>Winner: {{ candidates[0].name }}</h2>
+        <p class="winner-party">{{ candidates[0].party }}</p>
+        <p class="winner-stats">{{ candidates[0].votes }} votes ({{ candidates[0].percentage }}%)</p>
+    </div>
+    {% endif %}
+
+    <!-- Chart -->
+    <div class="chart-container">
+        <h3>Vote Distribution</h3>
+        <canvas id="resultsChart"></canvas>
+    </div>
+
+    {% else %}
+    <div class="alert alert-info">
+        <strong>No Results Yet</strong><br>
+        No votes have been cast in this election yet.
+    </div>
+    {% endif %}
+
+    <div class="blockchain-verification">
+        <button id="verifyResultsBtn" class="btn btn-secondary">
+            <span>🔒</span> Verify Blockchain Integrity
+        </button>
+        <div id="verificationResult" style="display: none; margin-top: 1rem;"></div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Load elections on page load
+    async function loadElections() {
+        try {
+            const response = await fetch('/api/list-elections');
+            const result = await response.json();
+            if (result.success) {
+                const select = document.getElementById('electionSelect');
+                select.innerHTML = '';
+                
+                if (result.elections.length === 0) {
+                    select.innerHTML = '<option value="">No elections available</option>';
+                } else {
+                    result.elections.forEach(election => {
+                        const option = document.createElement('option');
+                        option.value = election.id;
+                        const status = election.is_active ? '🟢 Active' : '🔴 Closed';
+                        option.textContent = `${election.name} - ${status}`;
+                        if (election.id === result.current_election_id) {
+                            option.selected = true;
+                        }
+                        select.appendChild(option);
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load elections:', error);
+        }
+    }
+
+    // Switch election
+    document.getElementById('electionSelect')?.addEventListener('change', async (e) => {
+        const electionId = e.target.value;
+        if (!electionId) return;
+        
+        try {
+            const response = await fetch('/api/switch-election', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({election_id: electionId})
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Failed to switch election:', error);
+        }
+    });
+
+    // Load elections when page loads
+    loadElections();
+
+    {% if candidates %}
+    // Chart data
+    const chartData = {
+        labels: [{% for candidate in candidates %}'{{ candidate.name }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Votes',
+            data: [{% for candidate in candidates %}{{ candidate.votes }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: [
+                'rgba(99, 102, 241, 0.8)',
+                'rgba(139, 92, 246, 0.8)',
+                'rgba(236, 72, 153, 0.8)',
+                'rgba(251, 146, 60, 0.8)',
+                'rgba(34, 197, 94, 0.8)',
+            ],
+            borderColor: [
+                'rgba(99, 102, 241, 1)',
+                'rgba(139, 92, 246, 1)',
+                'rgba(236, 72, 153, 1)',
+                'rgba(251, 146, 60, 1)',
+                'rgba(34, 197, 94, 1)',
+            ],
+            borderWidth: 2
+        }]
+    };
+
+    // Create chart
+    const ctx = document.getElementById('resultsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Verify blockchain
+    document.getElementById('verifyResultsBtn')?.addEventListener('click', async () => {
+        const btn = document.getElementById('verifyResultsBtn');
+        const result = document.getElementById('verificationResult');
+        
+        btn.disabled = true;
+        btn.textContent = 'Verifying...';
+        
+        try {
+            const response = await fetch('/api/verify-blockchain');
+            const data = await response.json();
+            
+            result.style.display = 'block';
+            if (data.is_valid) {
+                result.className = 'alert alert-success';
+                result.innerHTML = '<strong>✓ Blockchain Verified</strong><br>' + data.message;
+            } else {
+                result.className = 'alert alert-error';
+                result.innerHTML = '<strong>✗ Verification Failed</strong><br>' + data.message;
+            }
+        } catch (error) {
+            result.style.display = 'block';
+            result.className = 'alert alert-error';
+            result.innerHTML = '<strong>Error</strong><br>Failed to verify blockchain.';
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<span>🔒</span> Verify Blockchain Integrity';
+        }
+    });
+</script>
+{% endblock %}

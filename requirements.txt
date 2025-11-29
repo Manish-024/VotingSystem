@@ -1,0 +1,12 @@
+# Web Framework
+Flask==3.0.0
+gunicorn==21.2.0
+requests==2.31.0
+
+# Core Python modules (built-in, no installation needed):
+# - hashlib: For SHA-256 cryptographic hashing
+# - json: For data serialization
+# - time: For timestamps
+# - secrets: For secure random number generation
+# - datetime: For election timing
+# - typing: For type hints

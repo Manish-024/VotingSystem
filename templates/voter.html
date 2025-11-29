@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Voter Portal - Blockchain Voting System{% endblock %}
+
+{% block content %}
+<div class="container voter-container">
+    <h1 class="page-title">🗳️ Voter Portal</h1>
+    
+    <!-- Election Selector -->
+    <div id="electionSelector" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+        <label for="electionSelect" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Select Election:</label>
+        <select id="electionSelect" class="form-control" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: white;">
+            <option value="">Loading elections...</option>
+        </select>
+    </div>
+    
+    {% if not system_exists %}
+    <div class="alert alert-error">
+        <strong>No Election Available</strong><br>
+        There is currently no active election. Please check back later or contact the administrator.
+    </div>
+    {% else %}
+    
+    <div class="election-header">
+        <h2>{{ election_name }}</h2>
+        <span class="status-badge {% if is_active %}status-active{% else %}status-inactive{% endif %}">
+            {% if is_active %}🟢 Voting Open{% else %}🔴 Voting Closed{% endif %}
+        </span>
+    </div>
+
+    {% if not is_active %}
+    <div class="alert alert-warning">
+        <strong>Voting is Currently Closed</strong><br>
+        The election is not active at this time. Voting will be enabled when the administrator starts the election.
+    </div>
+    {% endif %}
+
+    <div class="voter-grid">
+        <!-- View Candidates -->
+        <div class="voter-card full-width">
+            <h2>📋 Candidates</h2>
+            {% if candidates %}
+            <div class="candidates-list">
+                {% for candidate in candidates %}
+                <div class="candidate-item">
+                    <div class="candidate-info">
+                        <h3>{{ candidate.name }}</h3>
+                        <p class="candidate-party">{{ candidate.party }}</p>
+                        {% if candidate.description %}
+                        <p class="candidate-description">{{ candidate.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="candidate-id">ID: {{ candidate.candidate_id }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted">No candidates registered yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Cast Vote -->
+        <div class="voter-card">
+            <h2>🗳️ Cast Your Vote</h2>
+            {% if is_active %}
+            <form id="castVoteForm" class="form">
+                <div class="form-group">
+                    <label>Your Voter ID</label>
+                    <input type="text" id="voteVoterId" placeholder="e.g., V001" required>
+                </div>
+                <div class="form-group">
+                    <label>Your Private Key</label>
+                    <input type="password" id="votePrivateKey" placeholder="Enter your private key" required>
+                    <small>This was provided when you registered</small>
+                </div>
+                <div class="form-group">
+                    <label>Select Candidate</label>
+                    <select id="voteCandidateId" required>
+                        <option value="">-- Choose a candidate --</option>
+                        {% for candidate in candidates %}
+                        <option value="{{ candidate.candidate_id }}">{{ candidate.name }} ({{ candidate.party }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-large">Submit Vote</button>
+            </form>
+            {% else %}
+            <p class="text-muted">Voting is currently closed. Please wait for the election to start.</p>
+            {% endif %}
+        </div>
+
+        <!-- Check Status -->
+        <div class="voter-card">
+            <h2>📊 Check Your Status</h2>
+            <form id="checkStatusForm" class="form">
+                <div class="form-group">
+                    <label>Your Voter ID</label>
+                    <input type="text" id="statusVoterId" placeholder="e.g., V001" required>
+                </div>
+                <button type="submit" class="btn btn-secondary">Check Status</button>
+            </form>
+            <div id="statusDisplay" class="status-display" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <h3>ℹ️ Voting Information</h3>
+        <ul>
+            <li><strong>Secure:</strong> Your vote is encrypted and stored on the blockchain</li>
+            <li><strong>Anonymous:</strong> While votes are transparent, voter identity is protected</li>
+            <li><strong>Immutable:</strong> Once cast, votes cannot be changed or deleted</li>
+            <li><strong>One Vote:</strong> Each voter can only vote once per election</li>
+            <li><strong>Verifiable:</strong> Anyone can verify the blockchain integrity</li>
+        </ul>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/voter.js') }}"></script>
+{% endblock %}
